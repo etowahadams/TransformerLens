@@ -25,6 +25,7 @@ from transformer_lens.pretrained.weight_conversions import (
     convert_bert_weights,
     convert_bloom_weights,
     convert_coder_weights,
+    convert_esm_weights,
     convert_gemma_weights,
     convert_gpt2_weights,
     convert_gptj_weights,
@@ -56,6 +57,7 @@ OFFICIAL_MODEL_NAMES = [
     "facebook/opt-13b",
     "facebook/opt-30b",
     "facebook/opt-66b",
+    "facebook/esm2_t33_650M_UR50D",
     "EleutherAI/gpt-neo-125M",
     "EleutherAI/gpt-neo-1.3B",
     "EleutherAI/gpt-neo-2.7B",
@@ -486,6 +488,7 @@ MODEL_ALIASES = {
     "facebook/opt-13b": ["opt-13b", "opt-xxl"],
     "facebook/opt-30b": ["opt-30b", "opt-xxxl"],
     "facebook/opt-66b": ["opt-66b", "opt-xxxxl"],
+    "facebook/esm2_t33_650M_UR50D": ["esm2-650M"],
     "EleutherAI/gpt-neo-125M": ["gpt-neo-125M", "gpt-neo-small", "neo-small", "neo"],
     "EleutherAI/gpt-neo-1.3B": ["gpt-neo-1.3B", "gpt-neo-medium", "neo-medium"],
     "EleutherAI/gpt-neo-2.7B": ["gpt-neo-2.7B", "gpt-neo-large", "neo-large"],
@@ -993,6 +996,20 @@ def convert_hf_model_config(model_name: str, **kwargs):
             "NTK_by_parts_high_freq_factor": 4.0,
             "NTK_by_parts_factor": 8.0,
         }
+    elif architecture == "EsmForMaskedLM":
+        cfg_dict = {
+            "d_model": hf_config.hidden_size,
+            "d_head": hf_config.hidden_size // hf_config.num_attention_heads,
+            "n_heads": hf_config.num_attention_heads,
+            "d_mlp": hf_config.intermediate_size,
+            "n_layers": hf_config.num_hidden_layers,
+            "n_ctx": hf_config.max_position_embeddings,
+            "eps": hf_config.layer_norm_eps,
+            "d_vocab": hf_config.vocab_size,
+            "act_fn": hf_config.hidden_act,
+            "normalization_type": "LN",
+            "positional_embedding_type": hf_config.config.position_embedding_type,
+        }
     elif architecture == "GPTNeoForCausalLM":
         cfg_dict = {
             "d_model": hf_config.hidden_size,
@@ -1101,9 +1118,11 @@ def convert_hf_model_config(model_name: str, **kwargs):
         use_local_attn = True if hf_config.sliding_window else False
         cfg_dict = {
             "d_model": hf_config.hidden_size,
-            "d_head": hf_config.head_dim
-            if hasattr(hf_config, "head_dim") and hf_config.head_dim > 0
-            else hf_config.hidden_size // hf_config.num_attention_heads,
+            "d_head": (
+                hf_config.head_dim
+                if hasattr(hf_config, "head_dim") and hf_config.head_dim > 0
+                else hf_config.hidden_size // hf_config.num_attention_heads
+            ),
             "n_heads": hf_config.num_attention_heads,
             "d_mlp": hf_config.intermediate_size,
             "n_layers": hf_config.num_hidden_layers,
@@ -1806,6 +1825,8 @@ def get_pretrained_state_dict(
             state_dict = convert_llama_weights(hf_model, cfg)
         elif cfg.original_architecture == "BertForMaskedLM":
             state_dict = convert_bert_weights(hf_model, cfg)
+        elif cfg.original_architecture == "EsmForMaskedLM":
+            state_dict = convert_esm_weights(hf_model, cfg)
         elif cfg.original_architecture == "T5ForConditionalGeneration":
             state_dict = convert_t5_weights(hf_model, cfg)
         elif cfg.original_architecture == "MistralForCausalLM":
