@@ -1008,7 +1008,7 @@ def convert_hf_model_config(model_name: str, **kwargs):
             "d_vocab": hf_config.vocab_size,
             "act_fn": hf_config.hidden_act,
             "normalization_type": "LN",
-            "positional_embedding_type": hf_config.config.position_embedding_type,
+            "positional_embedding_type": hf_config.position_embedding_type,
         }
     elif architecture == "GPTNeoForCausalLM":
         cfg_dict = {

@@ -49,8 +49,8 @@ def convert_esm_weights(esm_model, cfg: HookedTransformerConfig):
     # Convert the MLM head weights
     state_dict["mlm_head.W"] = esm_model.lm_head.dense.weight
     state_dict["mlm_head.b"] = esm_model.lm_head.dense.bias
-    state_dict["mlm_head.ln.w"] = esm_model.lm_head.LayerNorm.weight
-    state_dict["mlm_head.ln.b"] = esm_model.lm_head.LayerNorm.bias
+    state_dict["mlm_head.ln.w"] = esm_model.lm_head.layer_norm.weight
+    state_dict["mlm_head.ln.b"] = esm_model.lm_head.layer_norm.bias
     state_dict["unembed.W_U"] = embeddings.word_embeddings.weight.T
     state_dict["unembed.b_U"] = esm_model.lm_head.bias
 
