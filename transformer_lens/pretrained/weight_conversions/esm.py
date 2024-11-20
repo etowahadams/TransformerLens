@@ -6,7 +6,7 @@ from transformer_lens.HookedTransformerConfig import HookedTransformerConfig
 def convert_esm_weights(esm_model, cfg: HookedTransformerConfig):
     embeddings = esm_model.esm.embeddings
     state_dict = {
-        "embed.embed.W_E": embeddings.word_embeddings.weight,
+        "embed.W_E": embeddings.word_embeddings.weight,
         "embed.pos_embed.W_pos": embeddings.position_embeddings.weight,
     }
 
@@ -37,6 +37,8 @@ def convert_esm_weights(esm_model, cfg: HookedTransformerConfig):
             i=cfg.n_heads,
         )
         state_dict[f"blocks.{l}.attn.b_O"] = block.attention.output.dense.bias
+        state_dict[f"blocks.{l}.ln1.w"] = block.attention.LayerNorm.weight
+        state_dict[f"blocks.{l}.ln1.b"] = block.attention.LayerNorm.bias
         state_dict[f"blocks.{l}.mlp.W_in"] = einops.rearrange(
             block.intermediate.dense.weight, "mlp model -> model mlp"
         )
@@ -45,6 +47,8 @@ def convert_esm_weights(esm_model, cfg: HookedTransformerConfig):
             block.output.dense.weight, "model mlp -> mlp model"
         )
         state_dict[f"blocks.{l}.mlp.b_out"] = block.output.dense.bias
+        state_dict[f"blocks.{l}.ln2.w"] = block.LayerNorm.weight
+        state_dict[f"blocks.{l}.ln2.b"] = block.LayerNorm.bias
 
     # Convert the MLM head weights
     state_dict["mlm_head.W"] = esm_model.lm_head.dense.weight
